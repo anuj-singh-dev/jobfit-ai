@@ -18,13 +18,24 @@ export async function GET() {
 
     const { data, error } = await supabase
       .from("roadmaps")
-      .select("*")
+      .select(
+        "id, roadmap, progress, completed_items, completed_skills, created_at"
+      )
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
-    if (error || !data) {
+    if (error) {
+      console.error("LATEST ROADMAP DB ERROR:", error);
+
+      return NextResponse.json(
+        { error: error.message },
+        { status: 500 }
+      );
+    }
+
+    if (!data) {
       return NextResponse.json(
         { error: "No roadmap found." },
         { status: 404 }
@@ -33,10 +44,11 @@ export async function GET() {
 
     return NextResponse.json({
       success: true,
-      roadmap: data.roadmap,
+      roadmap: data.roadmap || [],
       roadmapId: data.id,
-      progress: data.progress,
+      progress: data.progress || 0,
       completedItems: data.completed_items || [],
+      completedSkills: data.completed_skills || [],
     });
   } catch (error) {
     console.error("LATEST ROADMAP ERROR:", error);

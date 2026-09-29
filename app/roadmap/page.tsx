@@ -79,23 +79,31 @@ export default function Roadmap() {
     }
   }
 
-  async function toggleComplete(index: number) {
-    const updated = [...completed];
+ async function toggleComplete(index: number) {
+  const updated = [...completed];
 
-    updated[index] = !updated[index];
+  updated[index] = !updated[index];
 
-    setCompleted(updated);
+  setCompleted(updated);
 
-    const completedCount = updated.filter(Boolean).length;
+  const completedCount = updated.filter(Boolean).length;
 
-    const progress =
-      updated.length > 0
-        ? Math.round((completedCount / updated.length) * 100)
-        : 0;
+  const progress =
+    updated.length > 0
+      ? Math.round(
+          (completedCount / updated.length) * 100
+        )
+      : 0;
 
-    if (roadmapId) {
-      try {
-        await fetch("/api/roadmap/progress", {
+  const completedSkills = roadmap
+    .filter((_, i) => updated[i])
+    .map((item) => item.skill);
+
+  if (roadmapId) {
+    try {
+      const response = await fetch(
+        "/api/roadmap/progress",
+        {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
@@ -104,14 +112,27 @@ export default function Roadmap() {
             roadmapId,
             progress,
             completedItems: updated,
+            completedSkills,
           }),
-        });
-      } catch (error) {
-        console.error("SAVE PROGRESS ERROR:", error);
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        console.error(
+          "SAVE PROGRESS ERROR:",
+          result
+        );
       }
+    } catch (error) {
+      console.error(
+        "SAVE PROGRESS ERROR:",
+        error
+      );
     }
   }
-
+}
   const completedCount = completed.filter(Boolean).length;
 
   const progress =

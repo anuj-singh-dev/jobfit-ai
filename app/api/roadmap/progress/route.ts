@@ -16,14 +16,19 @@ export async function PATCH(request: Request) {
       );
     }
 
-    const { roadmapId, progress, completedItems } =
-      await request.json();
+    const {
+  roadmapId,
+  progress,
+  completedItems,
+  completedSkills,
+} = await request.json();
 
     if (
-      !roadmapId ||
-      typeof progress !== "number" ||
-      !Array.isArray(completedItems)
-    ) {
+  !roadmapId ||
+  typeof progress !== "number" ||
+  !Array.isArray(completedItems) ||
+  !Array.isArray(completedSkills)
+) {
       return NextResponse.json(
         { error: "Invalid progress data." },
         { status: 400 }
@@ -33,9 +38,10 @@ export async function PATCH(request: Request) {
     const { error } = await supabase
       .from("roadmaps")
       .update({
-        progress,
-        completed_items: completedItems,
-      })
+  progress,
+  completed_items: completedItems,
+  completed_skills: completedSkills,
+})
       .eq("id", roadmapId)
       .eq("user_id", user.id);
 
@@ -47,10 +53,11 @@ export async function PATCH(request: Request) {
     }
 
     return NextResponse.json({
-      success: true,
-      progress,
-      completedItems,
-    });
+  success: true,
+  progress,
+  completedItems,
+  completedSkills,
+});
   } catch (error) {
     console.error("ROADMAP PROGRESS ERROR:", error);
 

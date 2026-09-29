@@ -1,6 +1,7 @@
 import Navigation from "../components/Navigation";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+
 export const dynamic = "force-dynamic";
 
 export default async function Dashboard() {
@@ -37,7 +38,9 @@ export default async function Dashboard() {
   // Latest roadmap
   const { data: roadmapData } = await supabase
     .from("roadmaps")
-    .select("id, progress, roadmap, created_at")
+    .select(
+      "id, progress, roadmap, completed_items, completed_skills, created_at"
+    )
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(1)
@@ -77,11 +80,89 @@ export default async function Dashboard() {
   const analysis = analysisData.analysis;
   const jobAnalysis = jobData?.analysis;
 
-  const missingSkills = jobAnalysis?.missing_skills || [];
-  const matchedSkills = jobAnalysis?.matched_skills || [];
+  // Original missing skills from job analysis
+  const originalMissingSkills = Array.isArray(
+    jobAnalysis?.missing_skills
+  )
+    ? jobAnalysis.missing_skills
+    : [];
 
-  const score = jobData?.jobfit_score || 0;
-  const roadmapProgress = roadmapData?.progress || 0;
+  // Latest roadmap
+  const roadmapItems = Array.isArray(roadmapData?.roadmap)
+    ? roadmapData.roadmap
+    : [];
+
+  // Checkbox state for each roadmap item
+  const completedItems = Array.isArray(
+    roadmapData?.completed_items
+  )
+    ? roadmapData.completed_items
+    : [];
+
+  // Skills completed through roadmap
+  const completedSkillsFromRoadmap = roadmapItems
+    .filter((_, index) => completedItems[index] === true)
+    .map((item) => item.skill)
+    .filter(Boolean);
+
+  // Remove completed roadmap skills from Skill Gaps
+  const missingSkills = originalMissingSkills.filter(
+    (skill: string) => {
+      const normalizedSkill = skill
+        .toLowerCase()
+        .trim();
+
+      return !completedSkillsFromRoadmap.some(
+        (completedSkill: string) =>
+          completedSkill
+            .toLowerCase()
+            .trim() === normalizedSkill
+      );
+    }
+  );
+
+  // Matched skills
+  const matchedSkills = Array.isArray(
+    jobAnalysis?.matched_skills
+  )
+    ? jobAnalysis.matched_skills
+    : [];
+
+  // Original JobFit score
+  const originalScore = jobData?.jobfit_score || 0;
+
+  // Roadmap statistics
+  const totalRoadmapSkills = roadmapItems.length;
+
+  const completedRoadmapSkills =
+    completedItems.filter(Boolean).length;
+
+  // Increase score based on roadmap completion
+  const scoreIncrease =
+    totalRoadmapSkills > 0
+      ? Math.round(
+          ((100 - originalScore) *
+            completedRoadmapSkills) /
+            totalRoadmapSkills
+        )
+      : 0;
+
+  // Current JobFit score
+  const score = Math.min(
+    100,
+    originalScore + scoreIncrease
+  );
+
+  // Roadmap progress
+  const completedCount =
+    completedItems.filter(Boolean).length;
+
+  const roadmapProgress =
+    roadmapItems.length > 0
+      ? Math.round(
+          (completedCount / roadmapItems.length) * 100
+        )
+      : 0;
 
   return (
     <main className="min-h-screen bg-black px-6 py-10 text-white">

@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { PasswordException } from "unpdf/pdfjs";
+
 
 export default function AuthPage() {
   const supabase = createClient();
@@ -215,6 +218,14 @@ router.refresh();
               }
               className="mt-2 w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3.5 text-white outline-none transition placeholder:text-gray-700 focus:border-green-500/50 focus:ring-1 focus:ring-green-500/20"
             />
+            <div className="flex justify-end">
+  <Link
+    href="/auth/forgot-password"
+    className="text-sm text-gray-500 hover:text-green-400"
+  >
+    Forgot password?
+  </Link>
+</div>
 
             {isSignup && (
               <p className="mt-2 text-xs text-gray-600">
